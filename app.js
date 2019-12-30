@@ -1,6 +1,8 @@
+const path = require('path');
 const errorHandler = require('./middleware/error');
 const newsRoute = require('./routes/bootcamp');
 const bodyParser = require('body-parser');
+const fileUpload = require('express-fileupload');
 const express = require('express');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
@@ -23,6 +25,12 @@ app.use(
         extended: false
     })
 );
+
+// file uploading
+app.use(fileUpload());
+
+// set static folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 // set routes
 app.use('/api/bootcamps', newsRoute);

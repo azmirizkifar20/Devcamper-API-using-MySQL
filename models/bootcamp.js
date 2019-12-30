@@ -1,4 +1,6 @@
+const path = require('path');
 const connectDB = require('../config/db');
+const slugify = require('slugify');
 const ErrorResponse = require('../utils/errorResponse');
 const { responseData, responseMessage } = require('../utils/responseHandler');
 
@@ -16,6 +18,10 @@ exports.createBootcamp = async (res, next, data) => {
         if (rows.length) {
             return next(new ErrorResponse('name already used, try another name!', 400));
         }
+
+        // generate slug & custom photo
+        data.slug = slugify(data.name, { lower: true });
+        data.photo = 'no-photo.jpg';
 
         // insert data
         const bootcamp = await new Bootcamp(data);
@@ -89,5 +95,55 @@ exports.deleteBootcamp = async (res, next, id) => {
 
         // output response
         responseMessage(res, 200, `${rows[0].name} removed!`);
+    });
+};
+
+// upload photo
+exports.uploadPhoto = async (res, next, id, fileSend) => {
+    await bootcamp.find('all', { where: `id = ${id}` }, async (err, rows, field) => {
+        if (err) return next(err);
+
+        if (!rows.length) {
+            return next(new ErrorResponse(`no data found with id = ${id}`, 404));
+        }
+
+        if (!fileSend) {
+            return next(new ErrorResponse('Please upload a file', 400));
+        }
+
+        const file = fileSend.files;
+
+        // Make sure the file is a photo
+        if (!file.mimetype.startsWith('image')) {
+            return next(new ErrorResponse('Please upload an image', 400));
+        }
+
+        // check file size
+        if (file.size > process.env.MAX_FILE_UPLOAD) {
+            return next(
+                new ErrorResponse(
+                    `Please upload an image less than ${process.env.MAX_FILE_UPLOAD}`,
+                    400
+                )
+            );
+        }
+
+        // create custom filename
+        file.name = `photo_${rows[0].slug}${path.parse(file.name).ext}`;
+
+        // move file to static folder
+        file.mv(`${process.env.FILE_UPLOAD_PATH}/${file.name}`, async err => {
+            if (err) return next(new ErrorResponse('Problem with file upload', 500));
+
+            const update = await new Bootcamp({ photo: file.name });
+            update.set('id', id);
+
+            update.save((err, result) => {
+                if (err) return next(err);
+
+                // output response
+                responseData(res, 200, update);
+            });
+        });
     });
 };

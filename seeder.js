@@ -1,5 +1,6 @@
 const fs = require('fs');
 const colors = require('colors');
+const slugify = require('slugify');
 const mysqlModel = require('mysql-model');
 
 // connect to DB
@@ -20,7 +21,11 @@ const bootcamps = JSON.parse(fs.readFileSync(`${__dirname}/_data/bootcamps.json`
 // import into DB
 const importData = async () => {
     try {
-        bootcamps.forEach(async data => {
+        bootcamps.forEach(async (data, index) => {
+            // generate slug & custom photo
+            data.slug = slugify(data.name, { lower: true });
+            data.photo = 'no-photo.jpg';
+
             const bootcamp = await new Bootcamp(data);
             bootcamp.save();
         });

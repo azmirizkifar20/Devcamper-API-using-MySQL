@@ -50,3 +50,10 @@ exports.updateBootcamp = (req, res, next) => {
 exports.deleteBootcamp = async (req, res, next) => {
     Bootcamp.deleteBootcamp(res, next, req.params.id);
 };
+
+// @desc    Upload bootcamp photo
+// @route   PUT /api/bootcamps/:id/photo
+// @access  Private
+exports.bootcampPhotoUpload = async (req, res, next) => {
+    Bootcamp.uploadPhoto(res, next, req.params.id, req.files);
+};
